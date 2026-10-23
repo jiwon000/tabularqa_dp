@@ -42,8 +42,11 @@ def _worker(folder: str, table: str) -> None:
     root = Path(folder)
     try:
         body = textwrap.dedent((root / "code.txt").read_text(encoding="utf-8")).strip()
-        tree = ast.parse("def answer(df):\n" + textwrap.indent(body, "    "))
+        # 주석만 입력해도 함수 본문이 비지 않도록 pass 를 덧붙였다가 파싱 후 뗀다.
+        tree = ast.parse("def answer(df):\n" + textwrap.indent(body, "    ") + "\n    pass")
         function = tree.body[0]
+        if len(function.body) > 1:
+            function.body.pop()
         # Notebook-style final expressions are returned automatically.
         if function.body and isinstance(function.body[-1], ast.Expr):
             function.body[-1] = ast.Return(value=function.body[-1].value)
