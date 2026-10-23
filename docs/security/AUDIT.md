@@ -33,20 +33,23 @@
 |---|---|---|---|
 | H-1 | 로그인 실패 횟수 제한 없음 | 보안기능 16 반복된 인증시도 제한 기능 부재 | `ui/auth.py`, `ui/db.py verify` |
 | H-2 | 비밀번호 정책이 길이(8자)만 검사 | 보안기능 9 취약한 비밀번호 허용 | `ui/db.py create_user` |
-| H-3 | 데모 계정 비밀번호 하드코딩 (`demo1234`, `admin1234`) | 보안기능 6 하드코드된 중요정보 | `ui/db.py init` |
+| H-3 | 데모 계정 비밀번호 하드코딩 → `ui/` 는 `.env`(`DEMO_*_PASSWORD`) 로 이전, 로그인 아이디 기본값 제거 (**조치**). `ui_design/db.py` 에 잔존 | 보안기능 6 하드코드된 중요정보 | `ui/db.py init`, `ui_design/db.py` |
 | H-4 | 예외 메시지(`{e}`)를 화면에 그대로 노출, `traceback.print_exc()` 사용 | 에러처리 1 오류메시지 정보노출 | `ui/pages/agent_qa.py`, `ui/boot.py`, `ui/agent_bridge.py` |
 | H-5 | 광범위한 `except Exception` 30곳, `except: pass` 2곳 | 에러처리 3 부적절한 예외처리, 2 오류상황 대응 부재 | 전반 |
 | H-6 | 디버그 `print`, `assert` 잔존 | 캡슐화 2 제거되지 않고 남은 디버그 코드 | `dp_agent_wrap.py`, `ui/requests.py` |
 | H-7 | 식별자를 f-string 으로 조립한 SQL (`PRAGMA`/`ALTER TABLE`) | 입력 1 SQL 삽입 | `ui/db.py _ensure_column` |
-| H-8 | Hugging Face 데이터셋 revision 미고정 | 보안기능 15 무결성 검사 없는 코드 다운로드 / 공급망 | `core/utils.py` |
+| H-8 | Hugging Face 데이터셋 revision 미고정 → 커밋 해시 고정, 예시 표는 저장소에 포함하고 SHA-256 검증 후 로드 (**조치**) | 보안기능 15 무결성 검사 없는 코드 다운로드 / 공급망 | `core/utils.py`, `ui/agent_bridge.py` |
 | H-9 | 의존성 버전 미고정 (`requirements.txt`) | SW 공급망 보안 | `requirements.txt` |
+| H-10 | LLM 호출 실패(예: 잘못된 API 키)를 파이프라인이 `print` 후 삼키고 빈 코드를 실행 → 화면에 `__CODE_ERROR__: IndentationError ...` 내부 오류가 노출됨 | 에러처리 1 오류메시지 정보노출, 2 오류상황 대응 부재 | `dp_agent_wrap.py OpenAIAnswerer`, `ui/pages/agent_qa.py` |
 
 ### 🟡 미사용 코드 (라인당 약점 밀도 개선)
 
 | 경로 | 비고 |
 |---|---|
 | `ui_design/` | `ui/` 의 이전 복사본, 앱에서 import 하지 않음 |
-| `main.py`, `config/`, `annotation/`, `new_agent.ipynb` | SemEval 원본 실험 코드. `yaml.load`, `eval` 등 약점 포함 |
+| `main.py`, `config/`, `new_agent.ipynb` | SemEval 원본 실험 코드. `yaml.load`, `eval` 등 약점 포함 |
+
+※ `annotation/` 은 에이전트 few-shot 예시로 사용 중이므로 유지한다.
 
 ## 이미 적용된 보안 설계 (유지·강조)
 

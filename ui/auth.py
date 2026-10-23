@@ -67,7 +67,7 @@ def _render_intro() -> None:
 def _render_login_form() -> None:
     """로그인 탭 폼. 성공 시 세션 채우고 rerun."""
     with st.form("login", clear_on_submit=False, border=False):
-        u = st.text_input("아이디", value="analyst")
+        u = st.text_input("아이디")
         p = st.text_input("비밀번호", type="password", placeholder="8자 이상")
         submitted = st.form_submit_button(
             "로그인", type="primary", use_container_width=True,

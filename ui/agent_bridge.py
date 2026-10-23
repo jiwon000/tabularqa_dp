@@ -7,7 +7,12 @@
                            준비 실패 시 mock 대신 PipelineUnavailable 을 올린다.
 - run_code(code, db)     : 수동 입력 코드를 별도 프로세스에서 실행.
 """
+import hashlib
+import io
 import time
+from functools import lru_cache
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 from ui import boot, catalog
@@ -30,8 +35,35 @@ class PipelineUnavailable(RuntimeError):
         super().__init__(self.reason)
 
 
+# 프롬프트 예시(few-shot)가 쓰는 SemEval 학습 표. 분석 대상 카탈로그와 분리해 두고,
+# 저장소에 함께 커밋한 SHA256SUMS 와 해시가 일치할 때만 읽는다 (외부 다운로드 없음).
+EXEMPLAR_DIR = Path(__file__).resolve().parent.parent / "annotation" / "tables"
+
+
+@lru_cache(maxsize=1)
+def _exemplar_hashes() -> dict[str, str]:
+    hashes = {}
+    for line in (EXEMPLAR_DIR / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+        digest, rel = line.split()
+        hashes[rel.split("/")[0]] = digest
+    return hashes
+
+
+def _load_exemplar_table(name: str) -> pd.DataFrame:
+    expected = _exemplar_hashes().get(name)
+    if expected is None:
+        raise FileNotFoundError(f"로컬 카탈로그에 '{name}' 없음")
+    path = EXEMPLAR_DIR / name / "all.parquet"
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != expected:
+        raise ValueError(f"예시 표 '{name}' 의 무결성 검증에 실패했습니다.")
+    return pd.read_parquet(io.BytesIO(data))
+
+
 def local_load_table(name: str) -> pd.DataFrame:
-    return pd.read_parquet(catalog.table_path(name))
+    if catalog.meta(name):
+        return pd.read_parquet(catalog.table_path(name))
+    return _load_exemplar_table(name)
 
 
 def install_local_loader() -> bool:

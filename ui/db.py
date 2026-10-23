@@ -17,7 +17,7 @@
                            → 데이터셋별 ε 원장과 History 의 단일 출처.
 
 주요 API
-    init()                              스키마 준비 + 데모 계정 seed
+    init()                              스키마 준비 + 데모 계정 seed (.env 에 비밀번호가 있을 때만)
 
     verify / create_user / user_exists / list_users
     get_eps_cap / grant_eps
@@ -50,10 +50,13 @@
 import datetime as dt
 import hashlib
 import hmac
+import os
 import secrets
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 
 DB_PATH = Path(__file__).resolve().parent.parent / "dp_demo.db"
@@ -192,10 +195,23 @@ def init(seed_demo: bool = True) -> None:
                        "eps_cap REAL NOT NULL DEFAULT 10.0")
 
     if seed_demo:
-        if not user_exists("analyst"):
-            create_user("analyst", "demo1234", is_admin=False)
-        if not user_exists("admin"):
-            create_user("admin",   "admin1234", is_admin=True)
+        _seed_demo_accounts()
+
+
+# 데모 계정 비밀번호는 코드에 두지 않고 .env 에서만 읽는다.
+# 값이 없으면 해당 계정을 만들지 않는다 (가입 화면으로 계정 생성 가능).
+DEMO_ACCOUNTS = (
+    ("analyst", "DEMO_ANALYST_PASSWORD", False),
+    ("admin",   "DEMO_ADMIN_PASSWORD",   True),
+)
+
+
+def _seed_demo_accounts() -> None:
+    load_dotenv()
+    for username, env_key, is_admin in DEMO_ACCOUNTS:
+        password = os.getenv(env_key)
+        if password and not user_exists(username):
+            create_user(username, password, is_admin=is_admin)
 
 
 # ── 비밀번호 파생 ────────────────────────────────

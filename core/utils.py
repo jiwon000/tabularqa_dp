@@ -5,6 +5,9 @@ from contextlib import contextmanager
 import timeit
 import json
 
+# Pin the Hugging Face dataset to one commit so downloads cannot change underneath us.
+DATABENCH_REVISION = "e75d53add267d2f9cfa32efd65ad77f0807adfad"
+
 
 # Caches the same table for faster loading since subsequent question tend to use the same table
 # It does not cache every table to save on memory
@@ -25,7 +28,7 @@ def load_table(name : str) -> pd.DataFrame:
     global CACHE_TABLE_NAME
     if CACHE_TABLE_NAME != name:
         CACHE_TABLE = pd.read_parquet(
-            f"https://huggingface.co/datasets/cardiffnlp/databench/resolve/main/data/{name}/all.parquet"
+            f"https://huggingface.co/datasets/cardiffnlp/databench/resolve/{DATABENCH_REVISION}/data/{name}/all.parquet"
         )
         CACHE_TABLE_NAME = name
     return CACHE_TABLE
@@ -46,7 +49,7 @@ def load_sample(name: str) -> pd.DataFrame:
     global CACHE_SAMPLE_NAME
     if CACHE_SAMPLE_NAME != name:
         CACHE_SAMPLE = pd.read_parquet(
-            f"https://huggingface.co/datasets/cardiffnlp/databench/resolve/main/data/{name}/sample.parquet"
+            f"https://huggingface.co/datasets/cardiffnlp/databench/resolve/{DATABENCH_REVISION}/data/{name}/sample.parquet"
         )
         CACHE_SAMPLE_NAME = name
     return CACHE_SAMPLE
@@ -132,7 +135,7 @@ def annotation_reader(file_path):
 	name, split = header.strip().split(' ')
 	print(f'Loading annotations from {name} {split}')
 	
-	dataset = load_dataset("cardiffnlp/databench", name=name, split=split)
+	dataset = load_dataset("cardiffnlp/databench", name=name, split=split, revision=DATABENCH_REVISION)
 	indices = [exemplar['index'] for exemplar in annotations['exemplars']]
 	cotes = [exemplar['annotation'] for exemplar in annotations['exemplars']]
 

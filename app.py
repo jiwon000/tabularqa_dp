@@ -5,7 +5,7 @@ from ui import auth, boot, db, state, theme
 
 # 스키마 준비 + 세션 상태 확인. set_page_config 는 첫 Streamlit 호출이므로
 # 세션 값을 먼저 읽고 그다음에 호출한다.
-# 기본값 init(True), 데모 계정 생성
+# 데모 계정은 .env 에 비밀번호가 설정된 경우에만 생성된다.
 db.init()
 authed = st.session_state.get("authenticated", False)
 
